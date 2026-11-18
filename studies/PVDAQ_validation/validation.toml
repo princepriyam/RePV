@@ -1,0 +1,65 @@
+# PVDAQ validation: every PVDAQ site config (config/site/<Place>_<sid>.toml, written by
+# scripts/pvdaq_site_configs.py) on its own scoring year ([data].sa_start/sa_end).
+# Run:   python scripts/run_pvdaq_validation.py          (site by site, resumable)
+# Outputs: outputs/pvdaq_validation/ (per site: sites/<site>/hourly.parquet, metrics.parquet)
+# NSRDB needs config/secrets.toml with an NREL key. Sites with a [station] also get "midc".
+
+models = [
+    "homer",                                    # RAT  rating-based reference configuration
+    "thesis",                                   # P0   MOD  module-resolved reference configuration
+    "thesis:site_pressure=true",                # P1   + site-pressure air mass
+    "thesis:site_pressure=true:iam=physical",   # P2   + diffuse incidence-angle correction
+    "thesis:site_pressure=true:iam=physical:use_horizon=true",   # P3 + terrain horizon
+    "thesis:site_pressure=true:iam=physical:use_horizon=true:loss_order=physical",   # P4 + physical DC loss placement
+    "thesis:site_pressure=true:iam=physical:use_horizon=true:loss_order=physical:soiling_position=optical",   # P5 + optical soiling
+    "thesis:site_pressure=true:iam=physical:use_horizon=true:loss_order=physical:soiling_position=optical:ac_clip=true",   # P6 + site export limit
+    "thesis:site_pressure=true:iam=physical:use_horizon=true:loss_order=physical:soiling_position=optical:ac_clip=true:snow_use_depth=true",   # P7 + ground-snow-depth condition and reset
+    "thesis:site_pressure=true:iam=physical:use_horizon=true:loss_order=physical:soiling_position=optical:ac_clip=true:snow_use_depth=true:snow_trigger=rolling",   # P8 + 6 h snowfall trigger
+    "thesis:site_pressure=true:iam=physical:use_horizon=true:loss_order=physical:soiling_position=optical:ac_clip=true:snow_use_depth=true:snow_trigger=rolling:snow_albedo=0.6",   # P9 + snow albedo
+    "current",                                  # P10  SYS-PVW system-resolved reference configuration
+    "current:inverter=sandia",                  # SYS-SDM  Sandia inverter (sites with a CEC inverter entry only)
+    # one-at-a-time ablations: each feature added to MOD alone (site pressure alone is P1) ...
+    "thesis:iam=physical",
+    "thesis:use_horizon=true",
+    "thesis:loss_order=physical",
+    "thesis:soiling_position=optical",
+    "thesis:ac_clip=true",
+    "thesis:snow_use_depth=true",
+    "thesis:snow_trigger=rolling",
+    "thesis:snow_albedo=0.6",
+    "thesis:snow=none",
+    # ... and removed from SYS-PVW alone (frozen-chain value restored)
+    "current:site_pressure=false",
+    "current:iam=physical_beam",
+    "current:use_horizon=false",
+    "current:loss_order=post_inverter",
+    "current:soiling_position=post_ac",
+    "current:ac_clip=false",
+    "current:snow_use_depth=false",
+    "current:snow_trigger=hourly",
+    "current:snow_albedo=null",
+    "current:snow=none",
+]
+
+weather    = ["point", "nsrdb"]   # Open-Meteo ERA5 point series; NSRDB PSM v4 at the site
+met        = "point"              # ERA5 temperature and wind for every input
+benchmarks = ["pvgis"]            # PVGIS-ERA5 (2005-2023 only), 14 % loss, free-standing
+
+# sites left out of the validation (configs kept); the runner skips them and leaves their
+# earlier outputs out of the combined tables
+[excluded_sites]
+NewSmyrnaBeach_1231 = "battery-based inverter (Trace SW4048): measured AC follows the battery and load, not the array; module only a proxy (PVL-124 for PVL-120)"
+NewOrleans_1275     = "orientation does not match the metadata (best fit south, not 135 deg) and output stays ~30 % low across the day with normal peaks: unmodelled shading"
+Golden_1332         = "1.153 MW is split between the garage roof and the south facade (NREL/FS-3500-58137); the split is not documented and the chain models one plane"
+SimonSolar_9069     = "the measured series sums an undocumented subset of the plant's AC meters"
+Golden_1284         = "hourly peak 1.10-1.15 x the metadata DC (8 x SF150-L = 1.2 kW); no source for the real module count or rating"
+
+# models a site cannot run, by site name; "current:inverter=sandia" is dropped automatically at
+# sites without an [inverter].cec entry
+[exclude]
+
+[breakdowns]
+month      = { by = "month" }
+year       = { by = "year" }
+local_hour = { by = "local_hour" }
+kc         = { by = "kc", bins = [0.0, 0.3, 0.6, 0.9, 1.2] }

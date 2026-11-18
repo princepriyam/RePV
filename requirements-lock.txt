@@ -1,0 +1,17 @@
+# Environment of every number in the MethodsX article (Python 3.13). Install with
+#   python -m pip install -r requirements-lock.txt && python -m pip install -e .
+# The verification suite passes with these versions (python -m pytest).
+pvlib==0.16.1
+numpy==2.5.3
+pandas==3.0.5
+scipy==1.18.1
+pyarrow==26.0.1
+requests==2.34.2
+urllib3==2.8.0
+tzdata==2026.6
+python-dateutil==2.9.0.post0
+pytz==2026.6
+certifi==2026.10.18
+charset-normalizer==3.5.1
+idna==3.20
+pytest==9.1.1

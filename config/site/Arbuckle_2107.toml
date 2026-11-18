@@ -1,0 +1,165 @@
+# Site: PVDAQ System 2107 — Farm Solar Array, Arbuckle, California, USA
+# Dataset: PVDAQ (OpenEI / OEDI), system_id = 2107
+# Data range: 2018-12-15 to 2023-11-15  (5-15 min resolution, ~445 MB)
+# Source: https://data.openei.org/submissions/4568
+#
+# Notes:
+# - Mediterranean climate (Köppen Csa): hot dry summers, mild wet winters.
+# - Fixed-tilt ground mount; no tracking.
+# - Modules: Hyundai HiS-M310TI, 2880 units (PVDAQ metadata, config/2107_system_metadata.json).
+#   PVDAQ lists mono-Si; CEC lists Multi-c-Si and the HiS-M series is multi: CEC parameters used.
+# - Inverters: 24 x ABB TRIO-27.6-TL-OUTD-S1B string inverters (27.6 kW rated, 662.4 kW total).
+# - DC capacity 893.0 kW; layout 20 series x 144 parallel = 2880 modules x 309.6 W = 891.6 kWp.
+# - Best complete years: 2019–2022 (all 8760 hrs confirmed in meter_15m data).
+
+[location]
+name      = "PVDAQ 2107 — Farm Solar Array, Arbuckle, CA"
+lat       = 38.996306
+lon       = -122.134111
+altitude  = 10.0          # m above sea level
+
+[data]
+start_date = "2019-01-01"
+end_date = "2019-12-31"
+resolution = "hourly"
+sa_start = "2019-01-01"
+sa_end = "2019-12-31"
+
+[array]
+tracking = false           # fixed-tilt ground mount
+tilt    = 25.0
+azimuth = 180.0            # true south
+albedo  = 0.20             # Sacramento Valley floor (soil / dry grass)
+
+[system]
+# 893.0 kWp DC ground-mount fixed-tilt.
+# 2880 modules; string length not recorded: 20 in series puts Vmp (720 V) inside the TRIO MPPT
+# window (520-800 V) and Voc (906 V) below its 1000 V limit, so 20 x 144 is assumed.
+# Measured AC exceeds 24 x 27.6 = 662.4 kW in 109 h of 2019 (max 699.5 kW): the inverters deliver
+# above rated power, so the ILR uses the TRIO maximum output of 30 kW (720 kW): 893/720 = 1.24.
+# ac_cap_kw stays the revenue-meter maximum (707.6 kW) as the site limit.
+rated_capacity_kw = 893.0
+ac_cap_kw         = 707.0   # inverter AC rating — apply as upper clip to simulated power
+ns_arr            = 20
+np_arr            = 144
+
+[inverter]
+ilr   = 1.24                                    # 893 kWp / (24 x 30 kW max output)
+cec   = "ABB__TRIO_27_6_TL_OUTD_S1B_US_480__480V_"   # Sandia option (L1); CEC Paco 27.6 kW per unit
+count = 24
+[measured]
+file               = "data/validation/PVDAQ/2107/2107_hourly.parquet"   # pvdaq_from_hourly.py; previous series in *.pre_pvdaq
+source             = "pvdaq_2107"
+time_col           = "timestamp"
+power_col          = "pv_power_hourly_kW"
+power_unit         = "kW"
+tz                 = "Etc/GMT+8"      # fixed standard time: labels moved onto it per month (pvdaq_extract.py checks)
+timestamp_label    = "start"
+interval_minutes   = 60
+manual_shift_hours = 0
+auto_lag_correction = false     # already corrected in the parquet
+max_lag_hours      = 4
+
+# ── Module: Hyundai HiS-M310TI, 309.6 W, 72-cell multi-Si (CEC database) ─────
+# CEC entry lists N_s = 60, but Voc = 45.3 V needs 72 cells (0.63 V/cell); the HiS-M310KI/RI
+# entries with identical STC values list 72. N_s = 72 used.
+# Area 1.956 m2 -> efficiency 0.158; CEC T_NOCT 46.5 C; gamma -0.440 %/K.
+# ── Timestamp alignment ──────────────────────────────────────────────────────
+# timestamp convention of the raw measured data:
+# 'start' = timestamp marks beginning of averaging interval
+# 'end'   = timestamp marks end of averaging interval
+# 'center'= timestamp marks center of averaging interval
+[module]
+isc_ref    =  8.90     # short-circuit current at STC [A]   (CEC)
+voc_ref    = 45.30     # open-circuit voltage at STC [V]    (CEC)
+imp_ref    =  8.60     # MPP current at STC [A]             (CEC)
+vmp_ref    = 36.00     # MPP voltage at STC [V]  -> Pmp = 309.6 W (CEC)
+mu_isc     =  0.004332 # dIsc/dT [A/°C]  (CEC HiS-M310TI)
+mu_voc     = -0.141685 # dVoc/dT [V/°C]  (CEC HiS-M310TI)
+ns         = 72        # cells in series (see note above)
+alpha_p    =  -0.0044  # power temp coeff [1/°C]  (CEC gamma_r -0.440 %/K)
+eta_mp_stc =    0.158  # module efficiency  309.6 W / 1.956 m2
+eg_ref      =  1.121    # De Soto bandgap [eV]  (silicon)
+cec         = "Hyundai_Heavy_Industries_Green_Energy_Co__HiS_M310KI"   # STC curve from CEC (72 cells, same STC values as the TI): the De Soto fit has only negative-R_sh solutions here
+
+# ── IAM: physical Fresnel model (standard AR-coated glass) ───────────────────
+[iam]
+n = 1.526
+k = 4.0
+l = 0.002
+
+# ── Thermal models ────────────────────────────────────────────────────────────
+[thermal.homer]
+# Open-rack ground mount; Sacramento Valley — moderate wind, warm summers.
+tc_noct   = 46.5      # CEC T_NOCT
+ta_noct   = 20.0
+poa_noct  =  0.8
+tau_alpha =  0.9
+
+[thermal.pvsyst]
+# Open-rack ground mount, free air circulation on both sides.
+u_c        =     27.2  # datasheet NOCT 46.5 C (open circuit): alpha_abs*800/(NOCT-20) = 0.9*800/26.5.
+u_v        =      0.0  # no module-height wind (PVsyst default)
+eta_module =    0.158  # datasheet
+alpha_abs  =  0.9
+
+# ── Loss stack, multiplicative efficiencies ───────────────────────────────────
+[losses]
+n_degradation = 0.9876   # (1 - 0.005)^2.5 years: installed 2017-01-01 (earliest of metadata and first data), mid-2019
+n_temp      = 0.97   # temperature derating   (3 % — milder than desert)
+n_soiling   = 0.94   # soiling                (6 % — Sacramento Valley dry-season dust)
+n_mismatch  = 0.98   # mismatch               (2 %)
+n_dc_wiring = 0.98   # DC wiring              (2 %)
+n_ac_wiring = 0.99   # AC wiring              (1 %)
+n_inverter  = 0.979  # inverter efficiency (CEC Paco/Pdco, TRIO-27.6)
+f_pv        = 0.95   # BOS derating (lumped, for HOMER linear model)
+eta_inv     = 0.97   # inverter efficiency (for HOMER linear model)
+
+# ── Provenance: source class of every model parameter (scripts/site_provenance.py) ──
+# measured | datasheet | published | metadata | output | assumed (solarmodel/schema.py)
+[provenance]
+"location.lat"              = "metadata"
+"location.lon"              = "metadata"
+"location.altitude"         = "metadata"
+"array.tracking"            = "metadata"
+"array.tilt"                = "metadata"
+"array.azimuth"             = "metadata"
+"array.albedo"              = "assumed"
+"system.rated_capacity_kw"  = "metadata"
+"system.ac_cap_kw"          = "metadata"
+"system.ns_arr"             = "metadata"
+"system.np_arr"             = "metadata"
+"inverter.ilr"              = "metadata"
+"inverter.cec"              = "metadata"
+"inverter.count"            = "metadata"
+"module.isc_ref"            = "datasheet"
+"module.voc_ref"            = "datasheet"
+"module.imp_ref"            = "datasheet"
+"module.vmp_ref"            = "datasheet"
+"module.mu_isc"             = "datasheet"
+"module.mu_voc"             = "datasheet"
+"module.ns"                 = "datasheet"
+"module.alpha_p"            = "datasheet"
+"module.eta_mp_stc"         = "datasheet"
+"module.eg_ref"             = "published"
+"module.cec"                = "datasheet"
+"iam.n"                     = "published"
+"iam.k"                     = "published"
+"iam.l"                     = "published"
+"thermal.homer.tc_noct"     = "datasheet"
+"thermal.homer.ta_noct"     = "published"
+"thermal.homer.poa_noct"    = "published"
+"thermal.homer.tau_alpha"   = "published"
+"thermal.pvsyst.u_c"        = "datasheet"
+"thermal.pvsyst.u_v"        = "published"
+"thermal.pvsyst.eta_module" = "datasheet"
+"thermal.pvsyst.alpha_abs"  = "published"
+"losses.n_degradation"      = "published"
+"losses.n_temp"             = "assumed"
+"losses.n_soiling"          = "assumed"
+"losses.n_mismatch"         = "assumed"
+"losses.n_dc_wiring"        = "assumed"
+"losses.n_ac_wiring"        = "assumed"
+"losses.n_inverter"         = "assumed"
+"losses.f_pv"               = "assumed"
+"losses.eta_inv"            = "assumed"

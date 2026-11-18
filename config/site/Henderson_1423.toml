@@ -1,0 +1,162 @@
+# Site: PVDAQ System 1423 — RTC-NV-Baseline, Henderson, Nevada, USA
+# Dataset: PVDAQ (OpenEI / OEDI), system_id = 1423
+# Data range: 2015-11-24 to 2025-07-28  (sub-hourly ~1-min, ~2419 MB, 26 channels)
+# Source: https://data.openei.org/submissions/4568
+#
+# Notes:
+# - Hot desert climate (Köppen Bwh): very hot dry summers, mild winters.
+# - Fixed-tilt ground mount; no tracking.
+# - Module (PVDAQ metadata): Suniva OPT270-60 BLK-BLK, mono-Si, 24 units -> 6.50 kWp
+#   (metadata "power" says 6.0). Parameters from CEC Suniva_OPT270_60_4_100.
+# - Two inverters (make unknown), one string of 12 modules each: DC ~320 V at MPP
+#   (raw inv*_dc_voltage); inv1 clips at ~3.09 kW AC.
+# - The hourly file is inv1 + inv2 (checked against raw 1-min, 2022-07-15), i.e. the
+#   whole system. (Earlier notes said inv2 only.)
+# - Raw 1-min channels also hold 8 module-back temperatures, POA pyranometer, 2 reference
+#   cells and ambient temperature; no wind.
+# - Analysis year: 2022-01-31 to 2023-01-30 (first complete 365-day window; 2020 only has 54 days).
+# - QA status: fail (qa_issue not specified in metadata).
+
+[location]
+name      = "PVDAQ 1423 — RTC-NV-Baseline, Henderson, NV"
+lat       = 36.0275
+lon       = -114.9215
+altitude  = 697.0         # m above sea level
+
+[data]
+start_date = "2022-01-31"
+end_date = "2023-01-30"
+resolution = "hourly"
+sa_start = "2022-01-31"
+sa_end = "2023-01-30"
+
+[array]
+tracking = false           # fixed-tilt ground mount
+tilt    = 35.0
+azimuth = 180.0            # true south
+albedo  = 0.20             # Mojave Desert floor (dry soil / gravel)
+
+[system]
+# 24 x 270.8 W = 6.50 kWp; 12 in series per inverter, 2 inverters (was a 20 x 300 W surrogate).
+# AC cap: inv1 plateaus at ~3.05-3.09 kW in the raw 1-min data -> 2 x 3.05 kW.
+rated_capacity_kw = 6.50
+ac_cap_kw         = 6.1
+ns_arr            = 12
+np_arr            = 2
+[station]
+# NREL MIDC University of Nevada Las Vegas, ~25 km NW of the site (LasVegas_34 is ~10 km).
+# Inputs "midc", met "midc".
+midc = "UNLV"
+
+[measured]
+file               = "data/validation/PVDAQ/1423/1423_hourly.parquet"   # pvdaq_from_hourly.py; previous series in *.pre_pvdaq
+source             = "pvdaq_1423"
+time_col           = "timestamp"
+power_col          = "pv_power_hourly_kW"
+power_unit         = "kW"
+tz                 = "Etc/GMT+8"      # fixed standard time: labels moved onto it per month (pvdaq_extract.py checks)
+timestamp_label    = "start"
+interval_minutes   = 60
+manual_shift_hours = 0
+auto_lag_correction = false     # already corrected in the parquet
+max_lag_hours      = 4
+
+# ── Module: Suniva OPT270-60 BLK-BLK, 270 Wp mono-Si (p-type), 60 cells ─────
+# CEC Suniva_OPT270_60_4_100: Isc 9.15 A, Voc 38.5 V, Imp 8.68 A, Vmp 31.2 V, A_c 1.576 m2,
+# alpha_sc 0.008784 A/K, beta_oc -0.1359 V/K, gamma_r -0.448 %/K, NOCT 49.2 C.
+# ── Timestamp alignment ──────────────────────────────────────────────────────
+# timestamp convention of the raw measured data:
+# 'start' = timestamp marks beginning of averaging interval
+# 'end'   = timestamp marks end of averaging interval
+# 'center'= timestamp marks center of averaging interval
+[module]
+isc_ref    =  9.15     # short-circuit current at STC [A]   (CEC)
+voc_ref    = 38.50     # open-circuit voltage at STC [V]    (CEC)
+imp_ref    =  8.68     # MPP current at STC [A]             (CEC)
+vmp_ref    = 31.20     # MPP voltage at STC [V]  -> Pmp = 270.8 W
+mu_isc     =  0.008784 # dIsc/dT [A/°C]  (CEC; 0.096 %/K, high for c-Si but as listed)
+mu_voc     = -0.135905 # dVoc/dT [V/°C]  (CEC; -0.353 %/K)
+ns         = 60        # cells in series
+alpha_p    =  -0.00448 # power temp coeff [1/°C]  (CEC gamma_r)
+eta_mp_stc =   0.1718  # module efficiency  (270.8 W / 1.576 m2)  (was mono_n_si 0.210)
+eg_ref      =  1.121    # unused with cec (EgRef solved to match mu_voc)
+cec         = "Suniva_OPT270_60_4_100"   # STC curve from CEC: the De Soto fit has only negative-R_sh solutions here
+
+# ── IAM: physical Fresnel model (standard AR-coated glass) ───────────────────
+[iam]
+n = 1.526
+k = 4.0
+l = 0.002
+
+# ── Thermal models ────────────────────────────────────────────────────────────
+[thermal.homer]
+# Roof/ground mount; Mojave Desert — low humidity, high irradiance, hot summers.
+tc_noct   = 49.2      # CEC NOCT (was 47.0)
+ta_noct   = 20.0
+poa_noct  =  0.8
+tau_alpha =  0.9
+
+[thermal.pvsyst]
+# Open-rack mount, free air circulation.
+u_c        =      30.7  # fit to 8 module-back sensors on the chain inputs, 509 steady clear hours, rmse 4.6 K (studies/LasVegas_34/fit_thermal.py); on-site inputs 28.7; was 24.0
+u_v        =       0.0  # no on-site wind; U_v free gives the same U at mean wind (32.0)
+eta_module =     0.1718 # module efficiency (was 0.210, mono_n_si)
+alpha_abs  =  0.9
+
+# ── Loss stack, multiplicative efficiencies ───────────────────────────────────
+[losses]
+n_degradation = 0.9671   # (1 - 0.005)^6.7 years: installed 2015-11-24 (earliest of metadata and first data), mid-2022
+n_temp      = 0.94   # temperature derating   (6 % — severe desert heat)
+n_soiling   = 0.96   # soiling                (4 % — Mojave dust, moderate)
+n_mismatch  = 0.98   # mismatch               (2 %)
+n_dc_wiring = 0.98   # DC wiring              (2 %)
+n_ac_wiring = 0.99   # AC wiring              (1 %)
+n_inverter  = 0.97   # inverter efficiency
+f_pv        = 0.95   # BOS derating (lumped, for HOMER linear model)
+eta_inv     = 0.97   # inverter efficiency (for HOMER linear model)
+
+# ── Provenance: source class of every model parameter (scripts/site_provenance.py) ──
+# measured | datasheet | published | metadata | output | assumed (solarmodel/schema.py)
+[provenance]
+"location.lat"              = "metadata"
+"location.lon"              = "metadata"
+"location.altitude"         = "metadata"
+"array.tracking"            = "metadata"
+"array.tilt"                = "metadata"
+"array.azimuth"             = "metadata"
+"array.albedo"              = "assumed"
+"system.rated_capacity_kw"  = "metadata"
+"system.ac_cap_kw"          = "metadata"
+"system.ns_arr"             = "metadata"
+"system.np_arr"             = "metadata"
+"module.isc_ref"            = "datasheet"
+"module.voc_ref"            = "datasheet"
+"module.imp_ref"            = "datasheet"
+"module.vmp_ref"            = "datasheet"
+"module.mu_isc"             = "datasheet"
+"module.mu_voc"             = "datasheet"
+"module.ns"                 = "datasheet"
+"module.alpha_p"            = "datasheet"
+"module.eta_mp_stc"         = "datasheet"
+"module.eg_ref"             = "published"
+"module.cec"                = "datasheet"
+"iam.n"                     = "published"
+"iam.k"                     = "published"
+"iam.l"                     = "published"
+"thermal.homer.tc_noct"     = "datasheet"
+"thermal.homer.ta_noct"     = "published"
+"thermal.homer.poa_noct"    = "published"
+"thermal.homer.tau_alpha"   = "published"
+"thermal.pvsyst.u_c"        = "measured"
+"thermal.pvsyst.u_v"        = "published"
+"thermal.pvsyst.eta_module" = "datasheet"
+"thermal.pvsyst.alpha_abs"  = "published"
+"losses.n_degradation"      = "published"
+"losses.n_temp"             = "assumed"
+"losses.n_soiling"          = "assumed"
+"losses.n_mismatch"         = "assumed"
+"losses.n_dc_wiring"        = "assumed"
+"losses.n_ac_wiring"        = "assumed"
+"losses.n_inverter"         = "assumed"
+"losses.f_pv"               = "assumed"
+"losses.eta_inv"            = "assumed"

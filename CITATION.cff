@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use RePV, please cite the article and the archived release."
+title: "RePV: reanalysis-driven photovoltaic yield model"
+version: 1.0.0
+date-released: 2026-11-18
+license: MIT
+authors:
+  - family-names: Bhavsar
+    given-names: Priyam Ketan
+    affiliation: Technical University of Munich, School of Engineering
+    email: priyam.bhavsar@tum.de
+keywords: [photovoltaics, ERA5, reanalysis, pvlib, snow, soiling, reproducible modelling]
+doi: 10.5281/zenodo.24355624
+repository-code: https://github.com/princepriyam/RePV

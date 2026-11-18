@@ -1,0 +1,21 @@
+feature,key,direction,with_model,without_model
+Site-pressure air mass,Pres,Added to MOD,thesis:site_pressure=true,thesis
+Site-pressure air mass,Pres,Removed from SYS,current,current:site_pressure=false
+Diffuse IAM,Iam,Added to MOD,thesis:iam=physical,thesis
+Diffuse IAM,Iam,Removed from SYS,current,current:iam=physical_beam
+Terrain horizon,Hor,Added to MOD,thesis:use_horizon=true,thesis
+Terrain horizon,Hor,Removed from SYS,current,current:use_horizon=false
+Physical loss placement,Loss,Added to MOD,thesis:loss_order=physical,thesis
+Physical loss placement,Loss,Removed from SYS,current,current:loss_order=post_inverter
+Optical soiling,Soil,Added to MOD,thesis:soiling_position=optical,thesis
+Optical soiling,Soil,Removed from SYS,current,current:soiling_position=post_ac
+AC capacity limit,Clip,Added to MOD,thesis:ac_clip=true,thesis
+AC capacity limit,Clip,Removed from SYS,current,current:ac_clip=false
+Snow-depth condition and reset,Depth,Added to MOD,thesis:snow_use_depth=true,thesis
+Snow-depth condition and reset,Depth,Removed from SYS,current,current:snow_use_depth=false
+6 h snowfall trigger,Trig,Added to MOD,thesis:snow_trigger=rolling,thesis
+6 h snowfall trigger,Trig,Removed from SYS,current,current:snow_trigger=hourly
+Snow-dependent albedo,Alb,Added to MOD,thesis:snow_albedo=0.6,thesis
+Snow-dependent albedo,Alb,Removed from SYS,current,current:snow_albedo=none
+NREL snow model,Snow,Added to MOD,thesis,thesis:snow=none
+NREL snow model,Snow,Removed from SYS,current,current:snow=none

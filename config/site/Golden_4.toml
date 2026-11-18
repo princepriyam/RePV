@@ -1,0 +1,156 @@
+# Site: PVDAQ System 4 — NREL x-Si -1, Golden, Colorado, USA
+# Dataset: PVDAQ (OpenEI / OEDI), system_id = 4
+# Data range: 2007-08-26 to 2025-07-28  (hourly, ~15 channels, QA pass*)
+# Source: https://data.openei.org/submissions/4568
+#
+# Notes:
+# - Cold semi-arid climate (Köppen BSk): dry, high-altitude (1795 m), moderate soiling.
+# - Fixed-tilt ground mount, south-facing (azimuth 180°, tilt 40°).
+# - Modules: Sanyo HIP-200BA3 (HIT, n-type heterojunction), 5 units (PVDAQ metadata); 1.0 kWdc.
+#   CEC has no BA3 entry; the HIP-200BA20 entry (same 200 W rating, 96 cells) is used.
+# - Layout: 5 series x 1 parallel = 5 modules x 200.3 W = 1.0 kWp.
+# - Next to the NREL SRRL Baseline Measurement System (MIDC BMS, ~0.3 km): station input "midc".
+# - QA note: metadata flags "Filtered time series less than 1.0 years data" in some sub-periods.
+# - Analysis year: 2015-01-01 to 2015-12-31 (within longest gap-free span 2013-06-13 → 2017-11-29).
+# - Timezone offset reported as UTC-7 (MST); mapped to America/Denver (observes MDT).
+
+[location]
+name      = "PVDAQ 4 — NREL x-Si -1, Golden, CO"
+lat       = 39.7406
+lon       = -105.1774
+altitude  = 1795.3        # m above sea level
+
+[data]
+start_date = "2015-01-01"
+end_date = "2015-12-31"
+resolution = "hourly"
+sa_start = "2015-01-01"
+sa_end = "2015-12-31"
+
+[array]
+tracking = false           # fixed-tilt ground mount
+tilt    = 40.0
+azimuth = 180.0            # true south
+albedo  = 0.20             # semi-arid terrain (dry soil / sparse vegetation)
+
+[system]
+# 1.0 kWp DC fixed-tilt ground mount.
+# 5 series x 1 parallel = 5 modules x 200.3 W = 1.0 kWp.
+# Inverter recorded as "Unknown 1800" (rating not given). The former 0.85 kW AC cap is removed:
+# measured output reaches 939 W in 2015, so it was not a real limit.
+rated_capacity_kw = 1.0
+ns_arr            = 5
+np_arr            = 1
+
+[station]
+# NREL SRRL Baseline Measurement System (GHI CMP22, DNI CHP1, DHI CM22, temperature, wind at 6 ft).
+midc = "BMS"
+[measured]
+file               = "data/validation/PVDAQ/4/4_hourly.parquet"   # pvdaq_from_hourly.py; previous series in *.pre_pvdaq
+source             = "pvdaq_4"
+time_col           = "timestamp"
+power_col          = "pv_power_hourly_kW"
+power_unit         = "kW"
+tz                 = "Etc/GMT+7"      # fixed standard time: labels moved onto it per month (pvdaq_extract.py checks)
+timestamp_label    = "start"
+interval_minutes   = 60
+manual_shift_hours = 0
+auto_lag_correction = false     # already corrected in the parquet
+max_lag_hours      = 4
+
+# NOTE: ac_power__315 has a constant +2.87 W hardware offset present 24/7 (incl. night).
+# This inflates measured annual energy by ~23 kWh (~1.6% of 1437 kWh total).
+# Timestamps confirmed MST/local (peak at solar noon 13:00). No time shift needed.
+# ── Module: Sanyo HIP-200BA3, 200 W HIT, 96 cells (CEC HIP-200BA20 values) ────
+# Area 1.16 m2 -> efficiency 0.173; CEC T_NOCT 45.0 C; gamma -0.348 %/K.
+# ── Timestamp alignment ──────────────────────────────────────────────────────
+# timestamp convention of the raw measured data:
+# 'start' = timestamp marks beginning of averaging interval
+# 'end'   = timestamp marks end of averaging interval
+# 'center'= timestamp marks center of averaging interval
+[module]
+isc_ref    =  3.83     # short-circuit current at STC [A]   (CEC)
+voc_ref    = 68.70     # open-circuit voltage at STC [V]    (CEC)
+imp_ref    =  3.59     # MPP current at STC [A]             (CEC)
+vmp_ref    = 55.80     # MPP voltage at STC [V]  -> Pmp = 200.3 W
+mu_isc     =  0.001992 # dIsc/dT [A/°C]  (CEC)
+mu_voc     = -0.190299 # dVoc/dT [V/°C]  (CEC)
+ns         = 96
+alpha_p    =  -0.00348 # power temp coeff [1/°C]  (CEC gamma_r -0.348 %/K)
+eta_mp_stc =    0.173  # module efficiency  200.3 W / 1.16 m2
+eg_ref      =  1.121    # De Soto bandgap [eV]  (c-Si absorber)
+[iam]
+n = 1.526
+k = 4.0
+l = 0.002
+
+# ── Thermal models ────────────────────────────────────────────────────────────
+[thermal.homer]
+# Ground mount at high altitude; cool-dry climate — lower operating temps.
+tc_noct   = 45.0      # CEC T_NOCT
+ta_noct   = 20.0
+poa_noct  =  0.8
+tau_alpha =  0.9
+
+[thermal.pvsyst]
+# Open-rack ground mount, free air circulation.
+u_c        =     28.8  # datasheet NOCT 45.0 C (open circuit): alpha_abs*800/(NOCT-20) = 0.9*800/25.0.
+u_v        =       0.0  # PVsyst default
+eta_module =     0.173  # datasheet
+alpha_abs  =   0.9
+
+# ── Loss stack, multiplicative efficiencies ───────────────────────────────────
+[losses]
+n_degradation = 0.9614   # (1 - 0.005)^7.8 years: installed 2007-08-25 (earliest of metadata and first data), mid-2015
+n_temp      = 0.97   # temperature derating   (3 % — high altitude, cooler summers)
+n_soiling   = 0.98   # soiling                (2 % — semi-arid, moderate dust; snow self-cleans)
+n_mismatch  = 0.98   # mismatch               (2 %)
+n_dc_wiring = 0.98   # DC wiring              (2 %)
+n_ac_wiring = 0.99   # AC wiring              (1 %)
+n_inverter  = 0.96   # inverter efficiency
+f_pv        = 0.95   # BOS derating (lumped, for HOMER linear model)
+eta_inv     = 0.96   # inverter efficiency (for HOMER linear model)
+
+# ── Provenance: source class of every model parameter (scripts/site_provenance.py) ──
+# measured | datasheet | published | metadata | output | assumed (solarmodel/schema.py)
+[provenance]
+"location.lat"              = "metadata"
+"location.lon"              = "metadata"
+"location.altitude"         = "metadata"
+"array.tracking"            = "metadata"
+"array.tilt"                = "metadata"
+"array.azimuth"             = "metadata"
+"array.albedo"              = "assumed"
+"system.rated_capacity_kw"  = "metadata"
+"system.ns_arr"             = "metadata"
+"system.np_arr"             = "metadata"
+"module.isc_ref"            = "datasheet"
+"module.voc_ref"            = "datasheet"
+"module.imp_ref"            = "datasheet"
+"module.vmp_ref"            = "datasheet"
+"module.mu_isc"             = "datasheet"
+"module.mu_voc"             = "datasheet"
+"module.ns"                 = "datasheet"
+"module.alpha_p"            = "datasheet"
+"module.eta_mp_stc"         = "datasheet"
+"module.eg_ref"             = "published"
+"iam.n"                     = "published"
+"iam.k"                     = "published"
+"iam.l"                     = "published"
+"thermal.homer.tc_noct"     = "datasheet"
+"thermal.homer.ta_noct"     = "published"
+"thermal.homer.poa_noct"    = "published"
+"thermal.homer.tau_alpha"   = "published"
+"thermal.pvsyst.u_c"        = "datasheet"
+"thermal.pvsyst.u_v"        = "published"
+"thermal.pvsyst.eta_module" = "datasheet"
+"thermal.pvsyst.alpha_abs"  = "published"
+"losses.n_degradation"      = "published"
+"losses.n_temp"             = "assumed"
+"losses.n_soiling"          = "assumed"
+"losses.n_mismatch"         = "assumed"
+"losses.n_dc_wiring"        = "assumed"
+"losses.n_ac_wiring"        = "assumed"
+"losses.n_inverter"         = "assumed"
+"losses.f_pv"               = "assumed"
+"losses.eta_inv"            = "assumed"

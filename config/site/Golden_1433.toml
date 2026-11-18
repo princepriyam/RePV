@@ -1,0 +1,135 @@
+# Site: PVDAQ System 1433 - [1433] NREL RSF1
+# Dataset: PVDAQ (OEDI), system_id = 1433; written by scripts/pvdaq_site_configs.py, edit there
+# Measured: data/validation/PVDAQ/1433/1433_hourly.parquet (pvdaq_extract.py; see 1433_report.md)
+# DC rating 383.76 kW: module count x model-name wattage (System.power says 449.28 kW)
+# Module: metadata 'hit-205a' (HIT Power 205 = HIP-205BA3) (SANDIA Sanyo_HIP_205BA3__2006__E__)
+# Inverter: unknown 250 kVA + 375 kVA x 1, AC cap 625.0 kW
+# Weather: MIDC BMS; inputs "midc", met "midc"
+# Scoring year 2011: most scorable daylight hours of the years the weather source covers (93.5 % of daylight hours)
+
+[location]
+name     = "PVDAQ 1433 - [1433] NREL RSF1"
+lat      = 39.7404
+lon      = -105.1719
+altitude = 1780.0        # m, metadata
+
+[data]
+start_date = "2011-01-01"
+end_date   = "2011-12-31"
+resolution = "hourly"
+sa_start   = "2011-01-01"
+sa_end     = "2011-12-31"
+
+[array]
+tracking = false
+tilt     = 10.0        # metadata
+azimuth  = 180.0       # metadata, degrees from north
+albedo   = 0.20        # assumed
+
+[system]
+rated_capacity_kw = 383.76
+pdc0_w            = 383760.0   # DC rating above (1872 x 205.3 W = 384.24 kW from the module table)
+ac_cap_kw         = 625.0       # inverter nameplate x count
+ns_arr            = 6           # assumed (no string data; ~400 V target; only Ns x Np = 1872 matters without an inverter model)
+np_arr            = 312
+
+[station]
+midc = "BMS"
+
+[measured]
+file               = "data/validation/PVDAQ/1433/1433_hourly.parquet"
+source             = "pvdaq_1433"
+time_col           = "timestamp"
+power_col          = "pv_power_hourly_kW"
+power_unit         = "kW"
+tz                 = "Etc/GMT+7"      # fixed standard time: pvdaq_extract.py moved the labels onto it, per month
+timestamp_label    = "start"
+interval_minutes   = 60
+manual_shift_hours = 0
+auto_lag_correction = false     # already corrected in the parquet (0 h in every year, pvdaq_verify_parquet.py)
+max_lag_hours      = 4
+
+[module]
+# Sanyo_HIP_205BA3__2006__E__ (HIT-Si); values from the SANDIA table
+isc_ref    = 3.8400
+voc_ref    = 68.8000
+imp_ref    = 3.6200
+vmp_ref    = 56.7000
+mu_isc     = 0.000883   # A/K
+mu_voc     = -0.172000   # V/K
+ns         = 96
+alpha_p    = -0.002957   # 1/K (Sandia Aimp + Bvmpo/Vmpo)
+eta_mp_stc = 0.1741
+
+[iam]
+n = 1.526
+k = 4.0
+l = 0.002
+
+[thermal.homer]
+tc_noct   = 45.0      # Sandia has no NOCT: 45 assumed
+ta_noct   = 20.0
+poa_noct  = 0.8
+tau_alpha = 0.9
+
+[thermal.pvsyst]
+u_c        = 20.0     # low-tilt rack on a roof (PVsyst 'semi-integrated with air duct'); mounting assumed from the system name and tilt
+u_v        = 0.0
+eta_module = 0.1741
+alpha_abs  = 0.9
+
+[losses]
+n_degradation = 0.9975   # (1 - 0.005)^0.5 years: installed 2010-12-30 (earliest of metadata and first data), mid-2011
+n_temp      = 0.95   # HOMER model only
+n_soiling   = 0.98
+n_mismatch  = 0.98
+n_dc_wiring = 0.98
+n_ac_wiring = 0.99
+n_inverter  = 0.97
+f_pv        = 0.95
+eta_inv     = 0.97
+
+# ── Provenance: source class of every model parameter (scripts/site_provenance.py) ──
+# measured | datasheet | published | metadata | output | assumed (solarmodel/schema.py)
+[provenance]
+"location.lat"              = "metadata"
+"location.lon"              = "metadata"
+"location.altitude"         = "metadata"
+"array.tracking"            = "metadata"
+"array.tilt"                = "metadata"
+"array.azimuth"             = "metadata"
+"array.albedo"              = "assumed"
+"system.rated_capacity_kw"  = "metadata"
+"system.pdc0_w"             = "metadata"
+"system.ac_cap_kw"          = "metadata"
+"system.ns_arr"             = "assumed"
+"system.np_arr"             = "assumed"
+"module.isc_ref"            = "datasheet"
+"module.voc_ref"            = "datasheet"
+"module.imp_ref"            = "datasheet"
+"module.vmp_ref"            = "datasheet"
+"module.mu_isc"             = "datasheet"
+"module.mu_voc"             = "datasheet"
+"module.ns"                 = "datasheet"
+"module.alpha_p"            = "datasheet"
+"module.eta_mp_stc"         = "datasheet"
+"iam.n"                     = "published"
+"iam.k"                     = "published"
+"iam.l"                     = "published"
+"thermal.homer.tc_noct"     = "assumed"
+"thermal.homer.ta_noct"     = "published"
+"thermal.homer.poa_noct"    = "published"
+"thermal.homer.tau_alpha"   = "published"
+"thermal.pvsyst.u_c"        = "published"
+"thermal.pvsyst.u_v"        = "published"
+"thermal.pvsyst.eta_module" = "datasheet"
+"thermal.pvsyst.alpha_abs"  = "published"
+"losses.n_degradation"      = "published"
+"losses.n_temp"             = "assumed"
+"losses.n_soiling"          = "assumed"
+"losses.n_mismatch"         = "assumed"
+"losses.n_dc_wiring"        = "assumed"
+"losses.n_ac_wiring"        = "assumed"
+"losses.n_inverter"         = "assumed"
+"losses.f_pv"               = "assumed"
+"losses.eta_inv"            = "assumed"

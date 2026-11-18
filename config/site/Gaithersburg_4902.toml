@@ -1,0 +1,139 @@
+# Site: PVDAQ System 4902 - NIST_Ground_1
+# Dataset: PVDAQ (OEDI), system_id = 4902; written by scripts/pvdaq_site_configs.py, edit there
+# Measured: data/validation/PVDAQ/4902/4902_hourly.parquet (pvdaq_extract.py; see 4902_report.md)
+# DC rating 270.72 kW: module count x model-name wattage
+# Module: metadata 'NU-U235F2' (CEC Sharp_NU_U235F2)
+# Inverter: PV Powered PVP 260kW x 1, AC cap 260.0 kW
+# Weather: NSRDB PSM v4 at the site; inputs "nsrdb", met "point"
+# Scoring year 2017: most scorable daylight hours of the years the weather source covers (98.2 % of daylight hours)
+
+[location]
+name     = "PVDAQ 4902 - NIST_Ground_1"
+lat      = 39.1319
+lon      = -77.2141
+altitude = 138.0        # m, metadata
+
+[data]
+start_date = "2017-01-01"
+end_date   = "2017-12-31"
+resolution = "hourly"
+sa_start   = "2017-01-01"
+sa_end     = "2017-12-31"
+
+[array]
+tracking = false
+tilt     = 20.0        # metadata
+azimuth  = 180.0       # metadata, degrees from north
+albedo   = 0.20        # assumed
+
+[system]
+rated_capacity_kw = 270.72
+pdc0_w            = 270720.0   # DC rating above (1152 x 235.2 W = 270.95 kW from the module table)
+ac_cap_kw         = 260.0       # inverter nameplate x count
+ns_arr            = 12           # metadata
+np_arr            = 96
+
+[measured]
+file               = "data/validation/PVDAQ/4902/4902_hourly.parquet"
+source             = "pvdaq_4902"
+time_col           = "timestamp"
+power_col          = "pv_power_hourly_kW"
+power_unit         = "kW"
+tz                 = "Etc/GMT+5"      # fixed standard time: pvdaq_extract.py moved the labels onto it, per month
+timestamp_label    = "start"
+interval_minutes   = 60
+manual_shift_hours = 0
+auto_lag_correction = false     # already corrected in the parquet (0 h in every year, pvdaq_verify_parquet.py)
+max_lag_hours      = 4
+
+[module]
+# Sharp_NU_U235F2 (Mono-c-Si); values from the CEC table
+isc_ref    = 8.6000
+voc_ref    = 37.0000
+imp_ref    = 7.8400
+vmp_ref    = 30.0000
+mu_isc     = 0.003784   # A/K
+mu_voc     = -0.121730   # V/K
+ns         = 60
+alpha_p    = -0.004580   # 1/K
+eta_mp_stc = 0.1495
+cec        = "Sharp_NU_U235F2"
+
+[iam]
+n = 1.526
+k = 4.0
+l = 0.002
+
+[thermal.homer]
+tc_noct   = 45.4
+ta_noct   = 20.0
+poa_noct  = 0.8
+tau_alpha = 0.9
+
+[thermal.pvsyst]
+u_c        = 29.0     # free-standing rack or carport (PVsyst 'free mounted'); mounting assumed from the system name and tilt
+u_v        = 0.0
+eta_module = 0.1495
+alpha_abs  = 0.9
+
+[snow]
+removal = "fast"       # measured / snow-free output 0.72 in the hours the chain has the array
+                       # snow-covered: snow is cleared faster than the NREL model slides it (FAST_SNOW)
+
+[losses]
+n_degradation = 0.9855   # (1 - 0.005)^2.9 years: installed 2014-07-29 (earliest of metadata and first data), mid-2017
+n_temp      = 0.95   # HOMER model only
+n_soiling   = 0.98
+n_mismatch  = 0.98
+n_dc_wiring = 0.98
+n_ac_wiring = 0.99
+n_inverter  = 0.97
+f_pv        = 0.95
+eta_inv     = 0.97
+
+# ── Provenance: source class of every model parameter (scripts/site_provenance.py) ──
+# measured | datasheet | published | metadata | output | assumed (solarmodel/schema.py)
+[provenance]
+"location.lat"              = "metadata"
+"location.lon"              = "metadata"
+"location.altitude"         = "metadata"
+"array.tracking"            = "metadata"
+"array.tilt"                = "metadata"
+"array.azimuth"             = "metadata"
+"array.albedo"              = "assumed"
+"system.rated_capacity_kw"  = "metadata"
+"system.pdc0_w"             = "metadata"
+"system.ac_cap_kw"          = "metadata"
+"system.ns_arr"             = "metadata"
+"system.np_arr"             = "metadata"
+"module.isc_ref"            = "datasheet"
+"module.voc_ref"            = "datasheet"
+"module.imp_ref"            = "datasheet"
+"module.vmp_ref"            = "datasheet"
+"module.mu_isc"             = "datasheet"
+"module.mu_voc"             = "datasheet"
+"module.ns"                 = "datasheet"
+"module.alpha_p"            = "datasheet"
+"module.eta_mp_stc"         = "datasheet"
+"module.cec"                = "datasheet"
+"iam.n"                     = "published"
+"iam.k"                     = "published"
+"iam.l"                     = "published"
+"thermal.homer.tc_noct"     = "datasheet"
+"thermal.homer.ta_noct"     = "published"
+"thermal.homer.poa_noct"    = "published"
+"thermal.homer.tau_alpha"   = "published"
+"thermal.pvsyst.u_c"        = "published"
+"thermal.pvsyst.u_v"        = "published"
+"thermal.pvsyst.eta_module" = "datasheet"
+"thermal.pvsyst.alpha_abs"  = "published"
+"snow.removal"              = "output"
+"losses.n_degradation"      = "published"
+"losses.n_temp"             = "assumed"
+"losses.n_soiling"          = "assumed"
+"losses.n_mismatch"         = "assumed"
+"losses.n_dc_wiring"        = "assumed"
+"losses.n_ac_wiring"        = "assumed"
+"losses.n_inverter"         = "assumed"
+"losses.f_pv"               = "assumed"
+"losses.eta_inv"            = "assumed"

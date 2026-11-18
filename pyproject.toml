@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "solarmodel"
+version = "1.0.0"
+description = "RePV: open, configuration-driven physical PV power model driven by reanalysis weather (MethodsX)"
+license = { text = "MIT" }
+readme = "README.md"
+authors = [{ name = "Priyam Ketan Bhavsar", email = "priyam.bhavsar@tum.de" }]
+requires-python = ">=3.12"
+dependencies = ["numpy>=2.0", "pandas>=2.2", "pvlib>=0.15", "scipy", "requests", "urllib3", "pyarrow"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+# ERA5 grid inputs and MOS in the testbench (solarmodel.weather.era5_grid, .mos)
+nwp = ["xarray", "h5netcdf", "scikit-learn"]
+
+[project.urls]
+Repository = "https://github.com/princepriyam/RePV"
+Archive = "https://doi.org/10.5281/zenodo.24355624"
+
+[tool.setuptools.packages.find]
+include = ["solarmodel*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

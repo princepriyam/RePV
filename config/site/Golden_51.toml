@@ -1,0 +1,133 @@
+# Site: PVDAQ System 51 - NREL x-Si 7
+# Dataset: PVDAQ (OEDI), system_id = 51; written by scripts/pvdaq_site_configs.py, edit there
+# Measured: data/validation/PVDAQ/51/51_hourly.parquet (pvdaq_extract.py; see 51_report.md)
+# DC rating 7.43 kW: override: SERF West (twin of SERF East, system 50): 140 x Siemens M55, 7.43 kW DC at STC; System.power 6.0 is the PTC AC estimate. van Dyk, Strand and Hansen (1996), NREL/CP-411-20430
+# Module: Siemens M55 (SERF West, twin of 50); STC 7.43 kW per van Dyk et al. 1996 (NREL/CP-411-20430) (SANDIA Siemens_Solar_SM55___1997_)
+# Inverter: unknown (metadata IG 4500-LV cannot deliver the measured 7 kW) x 1, no AC cap (rating unknown)
+# Weather: MIDC BMS; inputs "midc", met "midc"
+# Scoring year 2012: most scorable daylight hours of the years the weather source covers (99.0 % of daylight hours)
+
+[location]
+name     = "PVDAQ 51 - NREL x-Si 7"
+lat      = 39.7416
+lon      = -105.1734
+altitude = 1994.7        # m, metadata
+
+[data]
+start_date = "2012-01-01"
+end_date   = "2012-12-31"
+resolution = "hourly"
+sa_start   = "2012-01-01"
+sa_end     = "2012-12-31"
+
+[array]
+tracking = false
+tilt     = 45.0        # metadata
+azimuth  = 158.0       # metadata, degrees from north
+albedo   = 0.20        # assumed
+
+[system]
+rated_capacity_kw = 7.43
+pdc0_w            = 7430.0   # DC rating above (140 x 52.6 W = 7.36 kW from the module table)
+ns_arr            = 20           # assumed (no string data; ~400 V target; only Ns x Np = 140 matters without an inverter model)
+np_arr            = 7
+
+[station]
+midc = "BMS"
+
+[measured]
+file               = "data/validation/PVDAQ/51/51_hourly.parquet"
+source             = "pvdaq_51"
+time_col           = "timestamp"
+power_col          = "pv_power_hourly_kW"
+power_unit         = "kW"
+tz                 = "Etc/GMT+7"      # fixed standard time: pvdaq_extract.py moved the labels onto it, per month
+timestamp_label    = "start"
+interval_minutes   = 60
+manual_shift_hours = 0
+auto_lag_correction = false     # already corrected in the parquet (0 h in every year, pvdaq_verify_parquet.py)
+max_lag_hours      = 4
+
+[module]
+# Siemens_Solar_SM55___1997_ (c-Si); values from the SANDIA table
+isc_ref    = 3.3130
+voc_ref    = 21.4000
+imp_ref    = 3.0380
+vmp_ref    = 17.3100
+mu_isc     = 0.001491   # A/K
+mu_voc     = -0.083500   # V/K
+ns         = 36
+alpha_p    = -0.005091   # 1/K (Sandia Aimp + Bvmpo/Vmpo)
+eta_mp_stc = 0.1237
+
+[iam]
+n = 1.526
+k = 4.0
+l = 0.002
+
+[thermal.homer]
+tc_noct   = 45.0      # Sandia has no NOCT: 45 assumed
+ta_noct   = 20.0
+poa_noct  = 0.8
+tau_alpha = 0.9
+
+[thermal.pvsyst]
+u_c        = 29.0     # free-standing rack or carport (PVsyst 'free mounted'); mounting assumed from the system name and tilt
+u_v        = 0.0
+eta_module = 0.1237
+alpha_abs  = 0.9
+
+[losses]
+n_degradation = 0.9131   # (1 - 0.005)^18.1 years: installed 1994-05-13 (earliest of metadata and first data), mid-2012
+n_temp      = 0.95   # HOMER model only
+n_soiling   = 0.98
+n_mismatch  = 0.98
+n_dc_wiring = 0.98
+n_ac_wiring = 0.99
+n_inverter  = 0.97
+f_pv        = 0.95
+eta_inv     = 0.97
+
+# ── Provenance: source class of every model parameter (scripts/site_provenance.py) ──
+# measured | datasheet | published | metadata | output | assumed (solarmodel/schema.py)
+[provenance]
+"location.lat"              = "metadata"
+"location.lon"              = "metadata"
+"location.altitude"         = "metadata"
+"array.tracking"            = "metadata"
+"array.tilt"                = "metadata"
+"array.azimuth"             = "metadata"
+"array.albedo"              = "assumed"
+"system.rated_capacity_kw"  = "metadata"
+"system.pdc0_w"             = "metadata"
+"system.ns_arr"             = "assumed"
+"system.np_arr"             = "assumed"
+"module.isc_ref"            = "datasheet"
+"module.voc_ref"            = "datasheet"
+"module.imp_ref"            = "datasheet"
+"module.vmp_ref"            = "datasheet"
+"module.mu_isc"             = "datasheet"
+"module.mu_voc"             = "datasheet"
+"module.ns"                 = "datasheet"
+"module.alpha_p"            = "datasheet"
+"module.eta_mp_stc"         = "datasheet"
+"iam.n"                     = "published"
+"iam.k"                     = "published"
+"iam.l"                     = "published"
+"thermal.homer.tc_noct"     = "assumed"
+"thermal.homer.ta_noct"     = "published"
+"thermal.homer.poa_noct"    = "published"
+"thermal.homer.tau_alpha"   = "published"
+"thermal.pvsyst.u_c"        = "published"
+"thermal.pvsyst.u_v"        = "published"
+"thermal.pvsyst.eta_module" = "datasheet"
+"thermal.pvsyst.alpha_abs"  = "published"
+"losses.n_degradation"      = "published"
+"losses.n_temp"             = "assumed"
+"losses.n_soiling"          = "assumed"
+"losses.n_mismatch"         = "assumed"
+"losses.n_dc_wiring"        = "assumed"
+"losses.n_ac_wiring"        = "assumed"
+"losses.n_inverter"         = "assumed"
+"losses.f_pv"               = "assumed"
+"losses.eta_inv"            = "assumed"

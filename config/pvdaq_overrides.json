@@ -1,0 +1,27 @@
+{
+  "_doc": "Per-system corrections to the OEDI metadata, used by scripts/pvdaq_extract.py. Each entry needs a source. dc_kw: DC rating at STC. exclude: [start, end, reason] periods set missing before averaging.",
+  "50": {
+    "dc_kw": 7.43,
+    "source": "SERF East: 140 x Siemens M55, 7.43 kW DC at STC; System.power 6.0 is the PTC AC estimate. van Dyk, Strand and Hansen (1996), NREL/CP-411-20430; NREL/TP-411-21285",
+    "exclude": [
+      [
+        "2017-01-01",
+        "2023-12-31",
+        "ac_power_1 half-array peak down about 22 % from 2017 (ac_power_2 unchanged): not a healthy system"
+      ]
+    ]
+  },
+  "1208": {
+    "exclude": [
+      [
+        "2018-08-04",
+        "2022-12-31",
+        "after the PVDAQ pipeline change no channel is AC power for long stretches (meters read about 480,000 day and night, inverter 1 15,000 at night); the rest runs at 0.13-0.58 x DC"
+      ]
+    ]
+  },
+  "51": {
+    "dc_kw": 7.43,
+    "source": "SERF West (twin of SERF East, system 50): 140 x Siemens M55, 7.43 kW DC at STC; System.power 6.0 is the PTC AC estimate. van Dyk, Strand and Hansen (1996), NREL/CP-411-20430"
+  }
+}

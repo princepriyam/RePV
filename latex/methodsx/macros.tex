@@ -1,0 +1,9 @@
+% Shared by main.tex and supplement.tex.
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\RePV}{RePV}            % method name
+% Coverage symbols of the tool comparison table (main.tex): full, partial, absent. Needs tikz where typeset.
+\DeclareRobustCommand{\cF}{\tikz[baseline=-0.6ex]\fill (0,0) circle (0.55ex);}
+\DeclareRobustCommand{\cH}{\tikz[baseline=-0.6ex]{\draw[line width=0.4pt] (0,0) circle (0.55ex); \fill (0,0) -- (90:0.55ex) arc (90:270:0.55ex) -- cycle;}}
+\DeclareRobustCommand{\cN}{\tikz[baseline=-0.6ex]\draw[line width=0.4pt] (0,0) circle (0.55ex);}
+\input{numbers}        % verification constants (\fitResidual)
+\input{val_numbers}    % assessment numbers, written by make_validation_tables.py

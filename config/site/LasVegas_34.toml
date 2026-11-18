@@ -1,0 +1,167 @@
+# Site: PVDAQ System 34 — Andre Agassi Preparatory Academy (Bldg A), Las Vegas, NV
+# Dataset: PVDAQ (OpenEI / OEDI), system_id = 34
+# Data range: 2011-01-01 to 2013-12-31 (3 complete years; 2010 has stuck-sensor artifacts;
+#             2014 has a gap Feb 02 – Sep 30; 2015 is 1 day only)
+# Source: https://data.openei.org/submissions/4568
+#
+# Notes:
+# - Hot desert climate (Köppen Bwh): extreme heat, minimal precipitation, zero snow.
+# - Fixed-tilt rooftop; shallow tilt 11.2°; south-facing (azimuth 180°).
+# - Module: Sharp NU-U240F1, 240 Wp mono-Si, 60 cells, 611 units.
+# - Inverter: Satcon 135 kW central; ILR = 146.64/135 = 1.09.
+# - Raw ac_power_hw__2695 is in 100W units; corrected combined hourly uses ×0.1 → kW.
+# - Specific yield (measured): 2011=1673, 2012=1441, 2013=1636 kWh/kWp.
+# - 2012 has 589 NaN hours (4.1-month outage period in raw data).
+
+[location]
+name      = "PVDAQ 34 — Andre Agassi Prep Academy, Las Vegas, NV"
+lat       = 36.1952
+lon       = -115.1582
+altitude  = 620.0         # m above sea level
+
+[data]
+start_date = "2011-01-01"
+end_date = "2011-12-31"
+resolution = "hourly"
+sa_start = "2011-01-01"
+sa_end = "2011-12-31"
+
+[array]
+tracking = false
+tilt     = 11.2
+azimuth  = 180.0          # true south
+albedo   = 0.20           # urban rooftop / concrete surroundings
+
+[system]
+# 146.64 kWp DC rooftop; Satcon 135 kW central inverter.
+# Layout: 611 modules (PVDAQ metadata) = 13 series × 47 strings, the only factorisation;
+# 13 × Vmp 30.6 V = 398 V sits in the Satcon MPPT window (310 to 480 V), 20 in series would not.
+# 611 × 240.2 W = 146.77 kWp. (Was a 20 × 30 = 600 module surrogate, 144.0 kWp.)
+rated_capacity_kw = 146.64
+ac_cap_kw         = 135.0
+ns_arr            = 13
+np_arr            = 47
+
+[station]
+# NREL MIDC University of Nevada Las Vegas (GHI, DNI, computed DHI, air temperature,
+# wind at 30 ft), 1-min since March 2006, ~10 km SSE of the site. Inputs "midc", met "midc".
+midc = "UNLV"
+
+[inverter]
+# PVDAQ metadata: Satcon 135kW, central, quantity 1. CEC entry used by inverter="sandia".
+cec   = "Satcon_Technology__PVS_135__480V_"
+count = 1
+[measured]
+file               = "data/validation/PVDAQ/34/34_hourly.parquet"   # pvdaq_from_hourly.py; previous series in *.pre_pvdaq
+source             = "pvdaq_34"
+time_col           = "timestamp"
+power_col          = "pv_power_hourly_kW"
+power_unit         = "kW"
+tz                 = "Etc/GMT+8"      # fixed standard time: labels moved onto it per month (pvdaq_extract.py checks)
+timestamp_label    = "start"
+interval_minutes   = 60
+manual_shift_hours = 0
+auto_lag_correction = false     # already corrected in the parquet
+max_lag_hours      = 4
+
+# ── Module: Sharp NU-U240F1, 240 Wp mono-Si, 60 cells ────────────────────────
+# Datasheet: Voc=37.0V, Isc=8.79A, Vmp=30.6V, Imp=7.85A, area≈1.638m², η=14.65%
+# ── Timestamp alignment ──────────────────────────────────────────────────────
+# timestamp convention of the raw measured data:
+# 'start' = timestamp marks beginning of averaging interval
+# 'end'   = timestamp marks end of averaging interval
+# 'center'= timestamp marks center of averaging interval
+[module]
+isc_ref    =  8.79      # short-circuit current at STC [A]
+voc_ref    = 37.00      # open-circuit voltage at STC [V]
+imp_ref    =  7.85      # MPP current at STC [A]
+vmp_ref    = 30.60      # MPP voltage at STC [V]  → Pmp = 240.2 W
+# Temperature coefficients: CEC entry Sharp_NU_U240F1 (Mono-c-Si, p-type), in %/K
+# scaled to the Isc/Voc above: alpha 0.0440 %/K, beta -0.329 %/K, gamma -0.458 %/K.
+# (Was generic mono_n_si: 0.0035 A/K, -0.100 V/K, -0.0028 /K, eta 0.210.)
+mu_isc     =    0.00387 # dIsc/dT [A/°C]  (CEC NU-U240F1: 0.0440 %/K × 8.79 A)
+mu_voc     =  -0.1217  # dVoc/dT [V/°C]  (CEC NU-U240F1: -0.329 %/K × 37.0 V)
+ns         = 60         # cells in series
+alpha_p    =  -0.00458 # power temp coeff [1/°C]  (CEC NU-U240F1 gamma_r)
+eta_mp_stc =     0.1465 # module efficiency  (datasheet 240 W / 1.638 m²)
+eg_ref      =  1.121    # De Soto bandgap [eV]  (mono_n_si)
+
+# ── IAM: physical Fresnel model (standard AR-coated glass) ───────────────────
+[iam]
+n = 1.526
+k = 4.0
+l = 0.002
+
+# ── Thermal models ────────────────────────────────────────────────────────────
+[thermal.homer]
+# Shallow-tilt rooftop in desert; moderate rear ventilation.
+tc_noct   = 47.0
+ta_noct   = 20.0
+poa_noct  =  0.8
+tau_alpha =  0.9
+
+[thermal.pvsyst]
+# Rooftop with moderate air circulation; desert high-irradiance regime.
+u_c        =     28.3  # datasheet NOCT 45.4 C (open circuit): alpha_abs*800/(NOCT-20) = 0.9*800/25.4. Sensor fit 47.7 (studies/LasVegas_34/fit_thermal.py); the back sensor underreads.
+u_v        =       0.0  # no reliable module-height wind (PVsyst default)
+eta_module =     0.1465 # datasheet (was 0.210, mono_n_si)
+alpha_abs  =  0.9
+
+# ── Loss stack ────────────────────────────────────────────────────────────────
+[losses]
+n_degradation = 0.9957   # (1 - 0.005)^0.9 years: installed 2010-08-23 (earliest of metadata and first data), mid-2011
+n_temp      = 0.93    # temperature derating   (7% — extreme Las Vegas summer heat)
+n_soiling   = 0.96    # soiling                (4% — desert dust; shallow tilt retains more)
+n_mismatch  = 0.98    # mismatch               (2%)
+n_dc_wiring = 0.98    # DC wiring              (2%)
+n_ac_wiring = 0.99    # AC wiring              (1%)
+n_inverter  = 0.96    # inverter efficiency    (Satcon 135 kW central)
+f_pv        = 0.95    # BOS derating (HOMER linear model)
+eta_inv     = 0.96    # inverter efficiency (HOMER linear model)
+
+# ── Provenance: source class of every model parameter (scripts/site_provenance.py) ──
+# measured | datasheet | published | metadata | output | assumed (solarmodel/schema.py)
+[provenance]
+"location.lat"              = "metadata"
+"location.lon"              = "metadata"
+"location.altitude"         = "metadata"
+"array.tracking"            = "metadata"
+"array.tilt"                = "metadata"
+"array.azimuth"             = "metadata"
+"array.albedo"              = "assumed"
+"system.rated_capacity_kw"  = "metadata"
+"system.ac_cap_kw"          = "metadata"
+"system.ns_arr"             = "metadata"
+"system.np_arr"             = "metadata"
+"inverter.cec"              = "metadata"
+"inverter.count"            = "metadata"
+"module.isc_ref"            = "datasheet"
+"module.voc_ref"            = "datasheet"
+"module.imp_ref"            = "datasheet"
+"module.vmp_ref"            = "datasheet"
+"module.mu_isc"             = "datasheet"
+"module.mu_voc"             = "datasheet"
+"module.ns"                 = "datasheet"
+"module.alpha_p"            = "datasheet"
+"module.eta_mp_stc"         = "datasheet"
+"module.eg_ref"             = "published"
+"iam.n"                     = "published"
+"iam.k"                     = "published"
+"iam.l"                     = "published"
+"thermal.homer.tc_noct"     = "datasheet"
+"thermal.homer.ta_noct"     = "published"
+"thermal.homer.poa_noct"    = "published"
+"thermal.homer.tau_alpha"   = "published"
+"thermal.pvsyst.u_c"        = "datasheet"
+"thermal.pvsyst.u_v"        = "published"
+"thermal.pvsyst.eta_module" = "datasheet"
+"thermal.pvsyst.alpha_abs"  = "published"
+"losses.n_degradation"      = "published"
+"losses.n_temp"             = "assumed"
+"losses.n_soiling"          = "assumed"
+"losses.n_mismatch"         = "assumed"
+"losses.n_dc_wiring"        = "assumed"
+"losses.n_ac_wiring"        = "assumed"
+"losses.n_inverter"         = "assumed"
+"losses.f_pv"               = "assumed"
+"losses.eta_inv"            = "assumed"

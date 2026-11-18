@@ -1,0 +1,110 @@
+# Test fixture: config/site/LasVegas_34.toml with the measured file below.
+# Site: PVDAQ System 34 — Andre Agassi Preparatory Academy (Bldg A), Las Vegas, NV
+# Dataset: PVDAQ (OpenEI / OEDI), system_id = 34
+# Data range: 2011-01-01 to 2013-12-31 (3 complete years; 2010 has stuck-sensor artifacts;
+#             2014 has a gap Feb 02 – Sep 30; 2015 is 1 day only)
+# Source: https://data.openei.org/submissions/4568
+#
+# Notes:
+# - Hot desert climate (Köppen Bwh): extreme heat, minimal precipitation, zero snow.
+# - Fixed-tilt rooftop; shallow tilt 11.2°; south-facing (azimuth 180°).
+# - Module: Sharp NU-U240F1, 240 Wp mono-Si, 60 cells, 611 units.
+# - Inverter: Satcon 135 kW central; ILR = 146.64/135 = 1.09.
+# - Raw ac_power_hw__2695 is in 100W units; corrected combined hourly uses ×0.1 → kW.
+# - Specific yield (measured): 2011=1673, 2012=1441, 2013=1636 kWh/kWp.
+# - 2012 has 589 NaN hours (4.1-month outage period in raw data).
+
+[location]
+name      = "PVDAQ 34 — Andre Agassi Prep Academy, Las Vegas, NV"
+lat       = 36.1952
+lon       = -115.1582
+altitude  = 620.0         # m above sea level
+
+[data]
+start_date = "2011-01-01"
+end_date = "2011-12-31"
+resolution = "hourly"
+sa_start = "2011-01-01"
+sa_end = "2011-12-31"
+
+[array]
+tracking = false
+tilt     = 11.2
+azimuth  = 180.0          # true south
+albedo   = 0.20           # urban rooftop / concrete surroundings
+
+[system]
+# 146.64 kWp DC rooftop; Satcon 135 kW central inverter.
+# Surrogate layout: 20 series × 30 parallel = 600 modules × 240 W = 144.0 kWp (~1% under).
+rated_capacity_kw = 146.64
+ac_cap_kw         = 135.0
+ns_arr            = 20
+np_arr            = 30
+[measured]
+file           = "tests/data/bench/measured.csv"
+source        = "pvdaq_34"
+data_dir      = "data/validation/NIST/pvdaq_system_34/hourly_transformed"
+combined_file = "pvdaq_system_34_combined_hourly_corrected.csv"
+time_col      = "timestamp"
+power_col     = "pv_power_hourly_kW"
+power_unit    = "kW"
+raw_power_col = "ac_power_hw__2695"
+tz            = "Etc/GMT+8"     # fixed PST (UTC-8): no DST gaps/duplicates; summer and winter align with clear sky (checked 2026-11-02)
+
+# ── Module: Sharp NU-U240F1, 240 Wp mono-Si, 60 cells ────────────────────────
+# Datasheet: Voc=37.0V, Isc=8.79A, Vmp=30.6V, Imp=7.85A, area≈1.638m², η=14.65%
+
+# ── Timestamp alignment ──────────────────────────────────────────────────────
+# timestamp convention of the raw measured data:
+# 'start' = timestamp marks beginning of averaging interval
+# 'end'   = timestamp marks end of averaging interval
+# 'center'= timestamp marks center of averaging interval
+timestamp_label    = "start"
+interval_minutes   = 60
+manual_shift_hours = 0
+auto_lag_correction = true
+max_lag_hours      = 4
+
+[module]
+isc_ref    =  8.79      # short-circuit current at STC [A]
+voc_ref    = 37.00      # open-circuit voltage at STC [V]
+imp_ref    =  7.85      # MPP current at STC [A]
+vmp_ref    = 30.60      # MPP voltage at STC [V]  → Pmp = 240.2 W
+mu_isc     =    0.0035  # dIsc/dT [A/°C]  (mono_n_si)
+mu_voc     =  -0.1000  # dVoc/dT [V/°C]  (mono_n_si)
+ns         = 60         # cells in series
+alpha_p    =  -0.0028  # power temp coeff [1/°C]  (mono_n_si)
+eta_mp_stc =     0.210  # module efficiency  (mono_n_si)
+eg_ref      =  1.121    # De Soto bandgap [eV]  (mono_n_si)
+
+# ── IAM: physical Fresnel model (standard AR-coated glass) ───────────────────
+[iam]
+n = 1.526
+k = 4.0
+l = 0.002
+
+# ── Thermal models ────────────────────────────────────────────────────────────
+[thermal.homer]
+# Shallow-tilt rooftop in desert; moderate rear ventilation.
+tc_noct   = 47.0
+ta_noct   = 20.0
+poa_noct  =  0.8
+tau_alpha =  0.9
+
+[thermal.pvsyst]
+# Rooftop with moderate air circulation; desert high-irradiance regime.
+u_c        =     15.0  # exhaustive best (mono_n_si)
+u_v        =       0.0  # exhaustive best
+eta_module =     0.210
+alpha_abs  =  0.9
+
+# ── Loss stack ────────────────────────────────────────────────────────────────
+[losses]
+n_temp      = 0.93    # temperature derating   (7% — extreme Las Vegas summer heat)
+n_soiling   = 0.96    # soiling                (4% — desert dust; shallow tilt retains more)
+n_mismatch  = 0.98    # mismatch               (2%)
+n_dc_wiring = 0.98    # DC wiring              (2%)
+n_ac_wiring = 0.99    # AC wiring              (1%)
+n_inverter  = 0.96    # inverter efficiency    (Satcon 135 kW central)
+f_pv        = 0.95    # BOS derating (HOMER linear model)
+eta_inv     = 0.96    # inverter efficiency (HOMER linear model)
