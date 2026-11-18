@@ -1,16 +1,13 @@
 # data of the article: in the Zenodo archive, not in the code repository
 /cache/
 /data/
-latex/methodsx_figures/data/tiles/
+/latex/
 outputs/pvdaq_validation/sites/
 outputs/pvdaq_validation/*.parquet
 config/secrets.toml
 __pycache__/
 *.pyc
 .pytest_cache/
-latex/methodsx/build/
-latex/methodsx_overleaf/
-latex/methodsx_overleaf.zip
 examples/repv_*.csv
 *.egg-info/
 .ruff_cache/
@@ -18,12 +15,4 @@ examples/repv_*.csv
 .env
 .DS_Store
 release/
-latex/methodsx/*.aux
-latex/methodsx/*.bbl
-latex/methodsx/*.blg
-latex/methodsx/*.log
-latex/methodsx/*.out
-latex/methodsx/*.fls
-latex/methodsx/*.fdb_latexmk
-latex/methodsx/*.synctex.gz
 studies/*/outputs/

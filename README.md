@@ -3,7 +3,7 @@
 [![tests](https://github.com/princepriyam/RePV/actions/workflows/tests.yml/badge.svg)](https://github.com/princepriyam/RePV/actions/workflows/tests.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24355624.svg)](https://doi.org/10.5281/zenodo.24355624)
 
-RePV converts hourly weather (ERA5 by default, any irradiance source on request) and a description of a PV system into the mean AC power of one array at the grid connection point, with every modelling decision fixed and documented: the order of the published models, the source of each parameter value, the time interval each value represents, the starting state of snow and soiling, the default used when an input is missing, and whether each loss acts before or after the inverter. The method, its validation against 25 NREL PVDAQ systems and its limitations are described in the MethodsX article in `latex/methodsx/` (`main.tex`, `supplement.tex`, `supplementary.md`).
+RePV converts hourly weather (ERA5 by default, any irradiance source on request) and a description of a PV system into the mean AC power of one array at the grid connection point, with every modelling decision fixed and documented: the order of the published models, the source of each parameter value, the time interval each value represents, the starting state of snow and soiling, the default used when an input is missing, and whether each loss acts before or after the inverter. The method, its validation against 25 NREL PVDAQ systems and its limitations are described in the MethodsX article.
 
 RePV is the model `repv` of the Python package `solarmodel`.
 
@@ -49,16 +49,10 @@ out = bench.simulate(site, m, w)                            # p_ac_kw, p_dc_kw, 
 
 A site is one TOML file in `config/site/`. Its sections, required entries, ranges and the six provenance classes are defined in `solarmodel/schema.py`; a missing required entry, an unknown key or section, a value out of range or an unknown provenance class stops a run with an error that names the entry. Every model parameter of an assessment site carries its source class in the `[provenance]` table (`python scripts/site_provenance.py --check`).
 
-## Reproduce the article
+## Reproduce the validation
 
 ```
 python scripts/run_pvdaq_validation.py            # every assessment site, from the weather cache
-cd latex/methodsx
-python make_validation_tables.py                  # tables and numbers (val_*.tex, val_numbers.tex)
-python make_repo_supplement.py                    # supplementary.md
-python make_worked_example.py                     # worked example of Section S1.3
-sh ../methodsx_figures/build_figures.sh           # figures (R: ggplot2, patchwork, sf, maptiles, tidyterra)
-sh build.sh                                       # main.pdf and supplement.pdf
 ```
 
 NSRDB irradiance needs an NREL API key in `config/secrets.toml` (see `config/secrets.example.toml`) unless the cache holds it; the archived release ships the cache of every assessment window.
@@ -72,7 +66,6 @@ NSRDB irradiance needs an NREL API key in `config/secrets.toml` (see `config/sec
 | `studies/PVDAQ_validation/` | the study file of the article's validation |
 | `scripts/` | PVDAQ extraction, site-file writer, provenance, validation runner, snow-depth count, Zenodo archive builder, DOI setter |
 | `outputs/pvdaq_validation/` | assessment outputs (hourly series, scores, bootstrap) |
-| `latex/methodsx/` | article, journal supplement, repository supplement, table and example generators |
 | `tests/` | verification suite (run on every push, `.github/workflows/tests.yml`) |
 | `studies/LasVegas_34/fit_thermal.py` | U_c fitted to module-temperature sensors (Henderson 1423) |
 

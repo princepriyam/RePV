@@ -1,11 +1,11 @@
-"""Assemble the archive of RePV for Zenodo: code, paper, site files and the data of the article.
+"""Assemble the archive of RePV for Zenodo: code, site files and the data of the article.
 
     python scripts/make_release.py               # release/repv-<version>/
     python scripts/make_release.py --zip         # also release/repv-<version>.zip (upload to Zenodo)
     python scripts/make_release.py --dry-run     # list what would be copied, with sizes
 
-The git repository holds the code and the paper; the weather cache, the measured series and
-the per-site outputs stay out of git (.gitignore) and travel in this archive. Only what the
+The git repository holds the code; the paper is not published here or in the archive. The weather
+cache, the measured series and the per-site outputs stay out of git (.gitignore) and travel in this archive. Only what the
 article needs is copied, so local credentials, scratch files and basemap tiles are never
 published. Included:
   code          solarmodel/, tests/, scripts/ (no .bak), examples/, pyproject.toml,
@@ -16,8 +16,6 @@ published. Included:
   data          data/validation/PVDAQ/<id>/<id>_hourly.parquet, _metadata.json, _report.md;
                 cache/weather, cache/horizon, cache/pvgis files of those sites and their windows;
                 outputs/pvdaq_inventory, outputs/pvdaq_validation
-  paper         latex/methodsx sources, generators and PDFs; latex/methodsx_figures scripts,
-                data and figures
 The release's own .gitignore keeps the data directories out of a git repository, so that
 `git init && git add . && git commit` gives a light code repository for GitHub, while the zip
 with the data is the archive for Zenodo. Standard library only (Python 3.10+).
@@ -39,29 +37,18 @@ CODE_GLOBS = ["solarmodel/**/*.py", "solarmodel/README.md", "tests/**/*.py", "te
               "studies/PVDAQ_validation/validation.toml", "studies/LasVegas_34/fit_thermal.py",
               ".github/workflows/*.yml",
               "config/pvdaq_overrides.json", "config/secrets.example.toml"]
-PAPER = ["latex/methodsx/main.tex", "latex/methodsx/supplement.tex", "latex/methodsx/macros.tex",
-         "latex/methodsx/numbers.tex", "latex/methodsx/references.bib", "latex/methodsx/build.sh",
-         "latex/methodsx/worked_example.tex", "latex/methodsx/supplementary.md",
-         "latex/methodsx/make_validation_tables.py", "latex/methodsx/make_worked_example.py",
-         "latex/methodsx/make_repo_supplement.py", "latex/methodsx/make_overleaf.py", "latex/methodsx/main.pdf", "latex/methodsx/supplement.pdf"]
-PAPER_GLOBS = ["latex/methodsx/val_*.tex", "latex/methodsx_figures/*.R", "latex/methodsx_figures/*.py",
-               "latex/methodsx_figures/*.sh", "latex/methodsx_figures/data/**/*",
-               "latex/methodsx_figures/out/fig_validation.pdf", "latex/methodsx_figures/out/fig_sites_map.pdf"]
-# scratch files, and basemap tiles (provider terms do not allow redistribution; fig_sites_map.R downloads them)
+# scratch files
 SKIP = re.compile(r"(__pycache__|\.pyc$|\.bak$|\.DS_Store$|/\.pre_|\.pre_pvdaq$|\.pre_metadata$|/tiles/)")
 GITIGNORE = """# data of the article: in the Zenodo archive, not in the code repository
 /cache/
 /data/
-latex/methodsx_figures/data/tiles/
+/latex/
 outputs/pvdaq_validation/sites/
 outputs/pvdaq_validation/*.parquet
 config/secrets.toml
 __pycache__/
 *.pyc
 .pytest_cache/
-latex/methodsx/build/
-latex/methodsx_overleaf/
-latex/methodsx_overleaf.zip
 examples/repv_*.csv
 *.egg-info/
 .ruff_cache/
@@ -69,14 +56,6 @@ examples/repv_*.csv
 .env
 .DS_Store
 release/
-latex/methodsx/*.aux
-latex/methodsx/*.bbl
-latex/methodsx/*.blg
-latex/methodsx/*.log
-latex/methodsx/*.out
-latex/methodsx/*.fls
-latex/methodsx/*.fdb_latexmk
-latex/methodsx/*.synctex.gz
 studies/*/outputs/
 """
 
@@ -128,9 +107,8 @@ def station_years() -> set[tuple[str, str]]:
 
 def files() -> list[Path]:
     sel: set[Path] = set()
-    for g in CODE_GLOBS + PAPER_GLOBS:
+    for g in CODE_GLOBS:
         sel |= {p for p in ROOT.glob(g) if p.is_file()}
-    sel |= {ROOT / p for p in PAPER if (ROOT / p).exists()}
     sites = pvdaq_sites()
     years = scored_years()
     for name, sid, lat, lon in sites:
